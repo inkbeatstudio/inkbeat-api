@@ -1,11 +1,12 @@
 const CHANNEL_HANDLE = '@1nkbeat12'
 
 let cachedUploadsPlaylistId = null
+let cachedChannelId = null
 let cachedChannelSnippet = null
 
 async function getUploadsPlaylistId() {
   if (cachedUploadsPlaylistId) {
-    return { uploadsPlaylistId: cachedUploadsPlaylistId, channel: cachedChannelSnippet }
+    return { uploadsPlaylistId: cachedUploadsPlaylistId, channelId: cachedChannelId, channel: cachedChannelSnippet }
   }
 
   const res = await fetch(
@@ -25,9 +26,10 @@ async function getUploadsPlaylistId() {
   }
 
   cachedUploadsPlaylistId = channel.contentDetails.relatedPlaylists.uploads
+  cachedChannelId = channel.id
   cachedChannelSnippet = channel.snippet
 
-  return { uploadsPlaylistId: cachedUploadsPlaylistId, channel: cachedChannelSnippet }
+  return { uploadsPlaylistId: cachedUploadsPlaylistId, channelId: cachedChannelId, channel: cachedChannelSnippet }
 }
 
 module.exports = async function handler(req, res) {
@@ -39,15 +41,30 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { uploadsPlaylistId, channel } = await getUploadsPlaylistId()
+    const { uploadsPlaylistId, channelId, channel } = await getUploadsPlaylistId()
 
-    const videosRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&key=${process.env.YOUTUBE_API_KEY}`
-    )
+    async function fetchPlaylistItems(playlistId) {
+      return fetch(
+        `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&key=${process.env.YOUTUBE_API_KEY}`
+      )
+    }
+
+    let videosRes = await fetchPlaylistItems(uploadsPlaylistId)
+    let usedPlaylistId = uploadsPlaylistId
+
+    if (!videosRes.ok && videosRes.status === 404 && channelId && channelId.startsWith('UC')) {
+      const fallbackPlaylistId = 'UU' + channelId.slice(2)
+      if (fallbackPlaylistId !== uploadsPlaylistId) {
+        videosRes = await fetchPlaylistItems(fallbackPlaylistId)
+        usedPlaylistId = fallbackPlaylistId
+      }
+    }
 
     if (!videosRes.ok) {
       const errBody = await videosRes.text()
-      throw new Error(`YouTube playlistItems request failed (${videosRes.status}): ${errBody}`)
+      throw new Error(
+        `YouTube playlistItems request failed (${videosRes.status}): ${errBody} | channelId=${channelId} uploadsPlaylistId=${uploadsPlaylistId} triedPlaylistId=${usedPlaylistId}`
+      )
     }
 
     const videosData = await videosRes.json()
@@ -79,6 +96,7 @@ module.exports = async function handler(req, res) {
       .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
 
     res.status(200).json({
+      channelId,
       channel,
       videos
     })
