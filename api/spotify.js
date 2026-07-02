@@ -24,6 +24,21 @@ async function getToken() {
   return cachedToken
 }
 
+
+
+const trackRes = await fetch(
+  'https://api.spotify.com/v1/tracks/3EgO9ATzIBSEM8tXl0GmM3',
+  { headers }
+)
+
+const track = await trackRes.json()
+
+return res.json(track)
+
+
+
+
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
