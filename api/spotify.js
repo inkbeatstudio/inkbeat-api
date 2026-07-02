@@ -1,4 +1,5 @@
 const ARTIST_ID = '6hkNwIjIfDcMDp5AObEbO9'
+
 let cachedToken = null
 let tokenExpiresAt = 0
 
@@ -19,53 +20,33 @@ async function getToken() {
   })
 
   const data = await res.json()
+
   cachedToken = data.access_token
   tokenExpiresAt = Date.now() + data.expires_in * 1000 - 60000
+
   return cachedToken
 }
 
-
-
-const trackRes = await fetch(
-  'https://api.spotify.com/v1/tracks/3EgO9ATzIBSEM8tXl0GmM3',
-  { headers }
-)
-
-const track = await trackRes.json()
-
-return res.json(track)
-
-
-
-
-
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  if (req.method === 'OPTIONS') return res.status(200).end()
-
   try {
     const token = await getToken()
-    const headers = { Authorization: `Bearer ${token}` }
 
-    const [artistRes, albumsRes] = await Promise.all([
-      fetch(`https://api.spotify.com/v1/artists/${ARTIST_ID}`, { headers }),
-      fetch(`https://api.spotify.com/v1/artists/${ARTIST_ID}/albums?include_groups=album,single,compilation&limit=50`, { headers })
-    ])
+    const headers = {
+      Authorization: `Bearer ${token}`
+    }
 
-    const artist = await artistRes.json()
-    const albumsData = await albumsRes.json()
+    const trackRes = await fetch(
+      'https://api.spotify.com/v1/tracks/3EgO9ATzIBSEM8tXl0GmM3',
+      { headers }
+    )
 
-    const seen = new Set()
-    const albums = (albumsData.items || []).filter(a => {
-      const key = a.name.toLowerCase()
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
+    const track = await trackRes.json()
 
-    res.status(200).json({ artist, albums })
+    res.status(200).json(track)
+
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({
+      error: err.message
+    })
   }
 }
