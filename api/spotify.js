@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
         { headers }
       ),
       fetch(
-        `https://api.spotify.com/v1/artists/${ARTIST_ID}/albums?include_groups=album,single&market=UA&limit=50`,
+        `https://api.spotify.com/v1/artists/${ARTIST_ID}/albums?include_groups=album,single&limit=50`,
         { headers }
       )
     ])
