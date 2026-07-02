@@ -63,6 +63,11 @@ module.exports = async function handler(req, res) {
       )
     ])
 
+    if (!albumsRes.ok) {
+      const errBody = await albumsRes.text()
+      throw new Error(`Spotify albums request failed (${albumsRes.status}): ${errBody}`)
+    }
+
     const artist = await artistRes.json()
     const albumsData = await albumsRes.json()
 
