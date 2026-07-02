@@ -1,4 +1,4 @@
-const CHANNEL_HANDLE = '@1nkBeat12'
+const CHANNEL_HANDLE = '@1nkbeat12'
 
 let cachedUploadsPlaylistId = null
 let cachedChannelSnippet = null
