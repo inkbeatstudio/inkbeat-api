@@ -1,5 +1,5 @@
 const ARTIST_ID = '6hkNwIjIfDcMDp5AObEbO9'
-const ARTIST_NAME = 'InkBeat'
+const TRACK_ID = '3EgO9ATzIBSEM8tXl0GmM3'
 
 let cachedToken = null
 let tokenExpiresAt = 0
@@ -49,40 +49,19 @@ module.exports = async function handler(req, res) {
       Authorization: `Bearer ${token}`
     }
 
-    const artistRes = await fetch(
-      `https://api.spotify.com/v1/artists/${ARTIST_ID}`,
-      { headers }
-    )
+    const [artistRes, trackRes] = await Promise.all([
+      fetch(`https://api.spotify.com/v1/artists/${ARTIST_ID}`, { headers }),
+      fetch(`https://api.spotify.com/v1/tracks/${TRACK_ID}`, { headers })
+    ])
 
     const artist = await artistRes.json()
-
-    const searchRes = await fetch(
-      `https://api.spotify.com/v1/search?q=artist:${encodeURIComponent(
-        ARTIST_NAME
-      )}&type=track&limit=50`,
-      { headers }
-    )
-
-    const searchData = await searchRes.json()
-
-    const tracks = (searchData.tracks?.items || [])
-      .filter(track =>
-        track.artists.some(a => a.id === ARTIST_ID)
-      )
-      .filter(
-        (track, index, arr) =>
-          arr.findIndex(t => t.id === track.id) === index
-      )
-      .sort(
-        (a, b) =>
-          new Date(b.album.release_date) -
-          new Date(a.album.release_date)
-      )
+    const track = await trackRes.json()
 
     res.status(200).json({
       artist,
-      tracks
+      tracks: [track]
     })
+
   } catch (err) {
     console.error(err)
 
