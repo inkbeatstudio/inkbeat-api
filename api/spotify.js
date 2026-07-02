@@ -35,7 +35,7 @@ module.exports = async function handler(req, res) {
 
     const [artistRes, albumsRes] = await Promise.all([
       fetch(`https://api.spotify.com/v1/artists/${ARTIST_ID}`, { headers }),
-      fetch(`https://api.spotify.com/v1/artists/${ARTIST_ID}/albums?include_groups=album,single,compilation&market=UA&limit=50`, { headers })
+      fetch(`https://api.spotify.com/v1/artists/${ARTIST_ID}/albums?include_groups=album,single,compilation&limit=50`, { headers })
     ])
 
     const artist = await artistRes.json()
