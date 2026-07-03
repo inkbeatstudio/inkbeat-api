@@ -42,6 +42,10 @@ function upsizeArtwork(url) {
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  // Кешуємо на CDN Vercel на 5 хв, і ще 30 хв дозволяємо віддавати
+  // трохи застарілу відповідь, поки йде фонове оновлення — це прибирає
+  // затримку холодного старту функції для більшості відвідувачів
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800')
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end()
