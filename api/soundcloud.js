@@ -1,13 +1,6 @@
-// Профіль SoundCloud задається через env-змінну SOUNDCLOUD_PROFILE_URL
-// (напр. https://soundcloud.com/1nkbeat12)
-
 let cachedToken = null
 let cachedTokenExpiry = 0
 
-// Кешуємо і резолв профілю — user.id майже ніколи не змінюється,
-// тож поки лямбда "тепла", можна пропускати цей запит повністю
-// і одразу йти по треки. Живе довше за токен (id не залежить
-// від терміну дії токена).
 let cachedUser = null
 let cachedUserExpiry = 0
 
@@ -35,7 +28,6 @@ async function getToken() {
 
   const data = await res.json()
   cachedToken = data.access_token
-  // оновлюємо токен на хвилину раніше за реальний термін дії
   cachedTokenExpiry = now + ((data.expires_in || 3600) - 60) * 1000
 
   return cachedToken
@@ -56,7 +48,7 @@ async function getUser(profileUrl, token) {
   }
 
   cachedUser = await resolveRes.json()
-  cachedUserExpiry = now + 60 * 60 * 1000 // 1 година
+  cachedUserExpiry = now + 60 * 60 * 1000
 
   return cachedUser
 }
@@ -69,12 +61,10 @@ function upsizeArtwork(url) {
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  // Кешуємо на CDN Vercel на 10 хв, ще годину дозволяємо віддавати
-  // трохи застарілу відповідь, поки йде фонове оновлення, і ще добу —
-  // застарілу відповідь, якщо SoundCloud раптом недоступний. Разом
-  // це прибирає затримку холодного старту функції для переважної
-  // більшості відвідувачів.
-  res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=3600, stale-if-error=86400')
+  res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=600, stale-while-revalidate=3600, stale-if-error=86400'
+  )
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end()
@@ -123,7 +113,6 @@ module.exports = async function handler(req, res) {
       },
       tracks
     })
-
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: err.message })
